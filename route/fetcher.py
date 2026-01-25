@@ -14,7 +14,8 @@ router = APIRouter()
 
 class AddRequest(BaseModel):
     """"Schema for the job addition request."""
-    job_description: str
+    company: str
+    position: str
     job_url: str
     user: str
     webhooks: list[str]
@@ -38,47 +39,36 @@ async def fetch_company(
         raise HTTPException(status_code=400, detail="API key and Webhook URL headers are required")
     
     # Validate job description
-    if not request.job_description:
+    if not request.position or not request.company:
         raise HTTPException(status_code=400, detail="Job description is required")
-    
-    # Extract job info using the extractor service
-    try:
-        extract_info = extract_job_info(request.job_description, api)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error extracting job info: {str(e)}")
-    
-    # Parse the extracted JSON
-    payload = json.loads(extract_info)
-    job_title = payload["jobTitle"]
-    company = payload["company"]
 
     # Check if the company already exists in the database 10 days ago
     fifteen_days_ago = datetime.utcnow() - timedelta(days=15)
 
     existing_job = db.query(Job).filter(
-        Job.company == company,
+        Job.company == request.company,
         Job.date_added >= fifteen_days_ago
     ).first()
     if existing_job and not request.force_save:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content=ResponseModel(
-                message=f"{company} company already exists in the database within the last 15 days",
-                company=company
+                message=f"{request.company} company already exists in the database within the last 15 days",
+                company=request.company
             ).dict()
         )
 
     # Save the new job to the database
     try:
         new_job = Job(
-            job_title=job_title, 
-            company=company, 
+            job_title=request.position, 
+            company=request.company, 
             job_url=request.job_url
         )
 
         db.add(new_job)
 
-        send_discord_notification(job_title, company, request.job_url, request.webhooks, request.user, request.force_save)
+        send_discord_notification(request.position, request.company, request.job_url, request.webhooks, request.user, request.force_save)
 
         db.commit()
         db.refresh(new_job)
@@ -87,4 +77,4 @@ async def fetch_company(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error saving to database: {str(e)}")
 
-    return {"message": f"{company} added successfully", "company": company}
+    return {"message": f"{request.company} added successfully", "company": request.company}

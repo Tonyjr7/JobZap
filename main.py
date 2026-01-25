@@ -7,6 +7,7 @@ from database.base import Base
 
 # Import routers
 from route.fetcher import router as fetcher_router
+from route.extract import extractor_router
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -28,6 +29,7 @@ def on_startup():
 
 # Include routers
 app.include_router(fetcher_router)
+app.include_router(extractor_router)
 
 # Basic root endpoint
 @app.get("/")
