@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header, status, Response
+from fastapi import APIRouter, HTTPException, Depends, Header, status, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database.database import get_db
@@ -80,20 +80,33 @@ async def fetch_company(
     return {"message": f"{request.company} added successfully", "company": request.company}
 
 @router.get("/forward-job")
-async def forward_job(db: Session = Depends(get_db)):
-    """Route for external bid app to get job postings."""
+async def forward_job(
+    db: Session = Depends(get_db),
+    after_id: int = Query(0, description="Fetch jobs with ID greater than this"),
+    limit: int = Query(50, description="Maximum number of jobs to fetch")
+):
+    """
+    Route for external bid app to get job postings.
+    Supports incremental fetching using 'after_id' and batching using 'limit'.
+    """
+
     try:
-        jobs = db.query(Job).all()
+        # Fetch only jobs with id > after_id
+        jobs_query = db.query(Job).filter(Job.id > after_id).order_by(Job.id.asc()).limit(limit)
+        jobs = jobs_query.all()
+
         job_list = [
             {
                 "id": job.id,
-                "position": job.job_title,
+                "position": job.position,
                 "company": job.company,
                 "job_url": job.job_url,
-                "date_added": job.date_added.isoformat()
+                "date_added": job.date_added.isoformat() if job.date_added else None
             }
             for job in jobs
         ]
+
         return JSONResponse(status_code=status.HTTP_200_OK, content={"jobs": job_list})
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching jobs: {str(e)}")
