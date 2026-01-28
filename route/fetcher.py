@@ -78,3 +78,22 @@ async def fetch_company(
         raise HTTPException(status_code=500, detail=f"Error saving to database: {str(e)}")
 
     return {"message": f"{request.company} added successfully", "company": request.company}
+
+@router.get("/forward-job")
+async def forward_job(db: Session = Depends(get_db)):
+    """Route for external bid app to get job postings."""
+    try:
+        jobs = db.query(Job).all()
+        job_list = [
+            {
+                "id": job.id,
+                "position": job.job_title,
+                "company": job.company,
+                "job_url": job.job_url,
+                "date_added": job.date_added.isoformat()
+            }
+            for job in jobs
+        ]
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"jobs": job_list})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching jobs: {str(e)}")
