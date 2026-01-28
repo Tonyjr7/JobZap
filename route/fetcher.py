@@ -85,28 +85,24 @@ async def forward_job(
     after_id: int = Query(0, description="Fetch jobs with ID greater than this"),
     limit: int = Query(50, description="Maximum number of jobs to fetch")
 ):
-    """
-    Route for external bid app to get job postings.
-    Supports incremental fetching using 'after_id' and batching using 'limit'.
-    """
-
     try:
-        # Fetch only jobs with id > after_id
         jobs_query = db.query(Job).filter(Job.id > after_id).order_by(Job.id.asc()).limit(limit)
         jobs = jobs_query.all()
 
-        job_list = [
-            {
+        job_list = []
+        for job in jobs:
+            job_list.append({
                 "id": job.id,
-                "position": job.position,
-                "company": job.company,
-                "job_url": job.job_url,
-                "date_added": job.date_added.isoformat() if job.date_added else None
-            }
-            for job in jobs
-        ]
+                "position": getattr(job, "position", getattr(job, "job_title", None)),
+                "company": getattr(job, "company", None),
+                "job_url": getattr(job, "job_url", None),
+                "date_added": job.date_added.isoformat() if getattr(job, "date_added", None) else None
+            })
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"jobs": job_list})
-    
+        return {"jobs": job_list}
+
     except Exception as e:
+        # Log the error for debugging
+        import traceback
+        print("Error in forward_job:", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error fetching jobs: {str(e)}")
