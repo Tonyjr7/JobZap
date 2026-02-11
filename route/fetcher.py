@@ -79,7 +79,14 @@ async def fetch_company(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error saving to database: {str(e)}")
 
-    return {"message": f"{request.company} added successfully", "company": request.company}
+    # Get today's count
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_count = db.query(Job).filter(Job.date_added >= today_start).count()
+
+    return {
+        "message": f"{request.company} added successfully. Total for today: {today_count}", 
+        "company": request.company,
+    }
 
 @router.get("/forward-job")
 async def forward_job(
