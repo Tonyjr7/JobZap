@@ -42,8 +42,8 @@ async def fetch_company(
     if not request.position or not request.company:
         raise HTTPException(status_code=400, detail="Job description is required")
 
-    # Check if the company already exists in the database 15 days ago
-    fifteen_days_ago = datetime.utcnow() - timedelta(days=15)
+    # Check if the company already exists in the database 30 days ago
+    fifteen_days_ago = datetime.utcnow() - timedelta(days=30)
 
     clean_company = request.company.strip()
 
@@ -55,7 +55,7 @@ async def fetch_company(
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content=ResponseModel(
-                message=f"{request.company} company already exists in the database within the last 15 days",
+                message=f"{request.company} company already exists in the database within the last 30 days",
                 company=request.company
             ).dict()
         )
