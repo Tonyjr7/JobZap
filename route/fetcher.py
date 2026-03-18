@@ -55,7 +55,7 @@ async def fetch_company(
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content=ResponseModel(
-                message=f"{request.company} company already exists in the database within the last 30 days",
+                message=f"{request.company} company already exists in the database within the last 20 days",
                 company=request.company
             ).dict()
         )
