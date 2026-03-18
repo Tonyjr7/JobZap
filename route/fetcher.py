@@ -42,8 +42,8 @@ async def fetch_company(
     if not request.position or not request.company:
         raise HTTPException(status_code=400, detail="Job description is required")
 
-    # Check if the company already exists in the database 30 days ago
-    fifteen_days_ago = datetime.utcnow() - timedelta(days=30)
+    # Check if the company already exists in the database 20 days ago
+    fifteen_days_ago = datetime.utcnow() - timedelta(days=20)
 
     clean_company = request.company.strip()
 
