@@ -5,7 +5,7 @@ def extract_job_info(job_description: str, api_key: str):
     client = Groq(api_key=api_key)
 
     completion = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-120b",
         messages=[
             {
                 "role": "system",
